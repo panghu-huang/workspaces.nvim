@@ -2,37 +2,56 @@ mod metadata;
 mod package;
 
 use metadata::CargoMetadata;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use workspace::*;
 
-#[derive(Default)]
-pub struct CargoWorkspace;
+pub struct CargoWorkspace {
+  metadata: CargoMetadata,
+}
 
 impl Workspace for CargoWorkspace {
   fn package_manager(&self) -> &'static str {
     "cargo"
   }
 
-  fn packages(&self, working_dir: &std::path::Path) -> Option<Vec<WorkspacePackage>> {
-    let metadata = self
-      .get_metadata(working_dir)
-      .map_err(|e| {
-        log::error!("Failed to get cargo metadata: {}", e);
-      })
-      .ok()?;
+  fn workspace_root(&self) -> PathBuf {
+    PathBuf::from(self.metadata.workspace_root.clone())
+  }
 
-    Some(
-      metadata
-        .members()
-        .into_iter()
-        .map(|p| p.into())
-        .collect::<Vec<_>>(),
-    )
+  fn packages(&self) -> Vec<WorkspacePackage> {
+    let mut packages = self
+      .metadata
+      .members()
+      .into_iter()
+      .map(|p| p.into())
+      .collect::<Vec<_>>();
+
+    if packages.len() > 1 {
+      packages.push(WorkspacePackage {
+        // TODO: This is a hack to get the root package name
+        name: "root".to_string(),
+        root: self.workspace_root(),
+        commands: vec![
+          WorkspaceCommand {
+            bin: "cargo".to_string(),
+            args: vec!["build"].into_iter().map(|s| s.to_string()).collect(),
+          },
+          WorkspaceCommand {
+            bin: "cargo".to_string(),
+            args: vec!["test"].into_iter().map(|s| s.to_string()).collect(),
+          },
+        ],
+      })
+    }
+
+    packages
   }
 }
 
 impl CargoWorkspace {
-  fn get_metadata(&self, root: &Path) -> anyhow::Result<CargoMetadata> {
-    CargoMetadata::from_path(root)
+  pub fn try_from_dir(working_dir: &Path) -> Option<CargoWorkspace> {
+    CargoMetadata::from_path(working_dir)
+      .map(|metadata| CargoWorkspace { metadata })
+      .ok()
   }
 }

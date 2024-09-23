@@ -19,12 +19,19 @@ impl Workspace for PnpmWorkspace {
     "pnpm"
   }
 
-  fn packages(&self, _working_dir: &Path) -> Option<Vec<WorkspacePackage>> {
-    let mut packages = vec![self.resolve_root_package()?];
+  fn workspace_root(&self) -> PathBuf {
+    self.root.clone()
+  }
+
+  fn packages(&self) -> Vec<WorkspacePackage> {
+    let mut packages = self.resolve_root_package().into_iter().collect::<Vec<_>>();
 
     if let Some(config) = &self.config {
       for package_pattern in &config.packages {
-        let package_paths = find_package_json_paths(&self.root, package_pattern).ok()?;
+        let package_paths = match find_package_json_paths(&self.root, package_pattern) {
+          Ok(paths) => paths,
+          Err(_) => continue,
+        };
 
         for package_path in package_paths {
           match self.resolve_workspace_package(package_path) {
@@ -35,7 +42,7 @@ impl Workspace for PnpmWorkspace {
       }
     }
 
-    Some(packages)
+    packages
   }
 }
 
@@ -69,7 +76,6 @@ impl PnpmWorkspace {
   }
 
   fn resolve_root_package(&self) -> Option<WorkspacePackage> {
-    println!("root: {:?}", self.root);
     let root_package = self.root.join("package.json");
     let package_json = PackageJson::try_from_file(&root_package)?;
 
@@ -104,7 +110,6 @@ impl PnpmWorkspace {
     if working_dir.join("pnpm-lock.yaml").exists() {
       let config = PnpmWorkspace::resolve_workspace_config(working_dir);
 
-      println!("config: {:?}", config);
       return Some(PnpmWorkspace {
         root: working_dir.to_path_buf(),
         config,

@@ -14,12 +14,12 @@ fn find_package_by_name<'a>(
 
 #[test]
 fn test_cargo_workspace() {
-  let workspace = CargoWorkspace;
   let root = std::env::current_dir().unwrap();
+  let workspace = CargoWorkspace::try_from_dir(&root).unwrap();
 
-  let packages = workspace.packages(&root).unwrap();
+  let packages = workspace.packages();
 
-  assert_eq!(packages.len(), 3);
+  assert_eq!(packages.len(), 5);
 
   let package = find_package_by_name(&packages, "cargo").unwrap();
 

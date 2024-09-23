@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WorkspaceCommand {
@@ -16,5 +16,6 @@ pub struct WorkspacePackage {
 
 pub trait Workspace {
   fn package_manager(&self) -> &'static str;
-  fn packages(&self, working_dir: &Path) -> Option<Vec<WorkspacePackage>>;
+  fn workspace_root(&self) -> PathBuf;
+  fn packages(&self) -> Vec<WorkspacePackage>;
 }
