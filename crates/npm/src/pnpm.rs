@@ -58,10 +58,10 @@ impl PnpmWorkspace {
       .map(|name| WorkspaceCommand {
         bin: "pnpm".to_string(),
         args: vec![
-          "run".to_string(),
-          name.to_string(),
           "--filter".to_string(),
           package_name.clone(),
+          "run".to_string(),
+          name.to_string(),
         ],
       })
       .collect();
