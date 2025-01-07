@@ -42,18 +42,14 @@ impl CargoPackage {
 
     for target in &self.targets {
       for kind in &target.kind {
-        match kind {
-          TargetKind::Bin => {
-            if has_multiple_bins {
-              commands.push(self.run_command_with_bin_name(&target.name));
-            } else {
-              commands.push(self.run_command());
-            }
-          }
-          TargetKind::Example => {
-            commands.push(self.run_command_with_example_name(&target.name));
-          }
-          _ => {}
+        if has_multiple_bins {
+          commands.push(self.run_command_with_bin_name(&target.name));
+        } else {
+          commands.push(self.run_command());
+        }
+
+        if kind == &TargetKind::Example {
+          commands.push(self.run_command_with_example_name(&target.name));
         }
       }
     }
